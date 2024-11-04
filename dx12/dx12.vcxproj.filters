@@ -18,7 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Debug\DebugLayer.cpp">
+    <ClCompile Include="Core\DebugLayer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Core\Context.cpp">
@@ -29,7 +29,7 @@
     <ClInclude Include="basic_include.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Debug\DebugLayer.h">
+    <ClInclude Include="Core\DebugLayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Core\Context.h">
