@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="Core\Context.cpp" />
     <ClCompile Include="Core\DebugLayer.cpp" />
+    <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +138,8 @@
     <ClInclude Include="Core\Context.h" />
     <ClInclude Include="Core\custom_assert.h" />
     <ClInclude Include="Core\DebugLayer.h" />
+    <ClInclude Include="Core\Singleton.h" />
+    <ClInclude Include="Core\Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

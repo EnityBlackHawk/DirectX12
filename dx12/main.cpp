@@ -3,13 +3,22 @@
 #include "basic_include.h"
 #include "Core/DebugLayer.h"
 #include "Core/Context.h"
+#include "Core/Window.h"
 int main() {
 
 	DebugLayer::get().init();
 
-	if (Context::get().init()) {
+	if (Context::get().init() && Window::get().init()) {
 		OutputDebugString(L"Device created");
 
+		while (!Window::get().isClosed()) {
+			Window::get().update();
+			auto* cmdList = Context::get().prepareCommandList();
+
+			Context::get().executeCommandList();
+		}
+
+		Window::get().shutdown();
 		Context::get().shutdown();
 	}
 
