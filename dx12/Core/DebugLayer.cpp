@@ -4,7 +4,9 @@ DebugLayer::~DebugLayer()
 {
 #ifdef _DEBUG
 	_d3d12Debug->Release();
+	_d3d12Debug.Detach();
 	_dxgiDebug->Release();
+	_dxgiDebug.Detach();
 #endif // _DEBUG
 
 }

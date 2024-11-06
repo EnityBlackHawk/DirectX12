@@ -16,7 +16,11 @@ int main() {
 			auto* cmdList = Context::get().prepareCommandList();
 
 			Context::get().executeCommandList();
+			Window::get().present();
 		}
+		// Flush
+		Context::get().flush(Window::GetFrameCount());
+
 
 		Window::get().shutdown();
 		Context::get().shutdown();

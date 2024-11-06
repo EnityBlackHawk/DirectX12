@@ -1,5 +1,5 @@
 #include "Window.h"
-
+#include "Context.h"
 #include "custom_assert.h"
 
 bool Window::init()
@@ -41,11 +41,50 @@ bool Window::init()
 
     assert(_windowHandle && "Error on create the window");
 
+	DXGI_SWAP_CHAIN_DESC1 scd = {};
+	scd.Width = 800;
+	scd.Height = 600;
+	scd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	scd.Stereo = false;
+	scd.SampleDesc.Count = 1;
+	scd.SampleDesc.Quality = 0;
+	scd.BufferUsage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	scd.BufferCount = GetFrameCount(); // = 2 | if vsync is enabled, it will be 3
+	scd.Scaling = DXGI_SCALING_STRETCH;
+	scd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	scd.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+	scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsd = {};
+	//fsd.RefreshRate = ;
+	//fsd.Scaling = DXGI_MODE_SCALING_CENTERED;
+	//fsd.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	fsd.Windowed = true;
+
+	ComPtr<IDXGISwapChain1> swapChain;
+	HRESULT result = Context::get().getDxgiFactory()->CreateSwapChainForHwnd(
+		Context::get().getCommandQueue().Get(),
+		_windowHandle,
+		&scd,
+		&fsd,
+		nullptr,
+		swapChain.GetAddressOf()
+	);
+	
+	assert_if_SUCCEEDED(result, "Error on create the swap chain");
+
+	result = swapChain->QueryInterface(IID_PPV_ARGS(&_swapChain));
+	assert_if_SUCCEEDED(result, "Error on convert to IDXGISwapChain4");
+
     return true;
 }
 
 void Window::shutdown()
 {
+
+	_swapChain->Release();
+	_swapChain.Detach();
+
     if (_windowHandle) {
         DestroyWindow(_windowHandle);
     }
@@ -65,6 +104,11 @@ void Window::update() const
 		DispatchMessageW(&msg);
 	}
 
+}
+
+void Window::present()
+{
+	_swapChain->Present(1, 0);
 }
 
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

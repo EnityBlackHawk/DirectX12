@@ -18,8 +18,17 @@ public:
 	void shutdown();
 	void signalAndWait();
 
+	inline void flush(int count) {
+		for (int i = 0; i < count; i++) {
+			signalAndWait();
+		}
+	}
+
 	ID3D12GraphicsCommandList7* prepareCommandList();
 	void executeCommandList();
+
+	ComPtr<IDXGIFactory7> getDxgiFactory() const { return _dxgiFactory; }
+	ComPtr<ID3D12CommandQueue> getCommandQueue() const { return _commandQueue; }
 
 private:
 	Context() = default;
