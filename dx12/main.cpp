@@ -13,6 +13,11 @@ int main() {
 
 		while (!Window::get().isClosed()) {
 			Window::get().update();
+			if (Window::get().isResized())
+			{
+				Context::get().flush(Window::GetFrameCount());
+				Window::get().resize();
+			}
 			auto* cmdList = Context::get().prepareCommandList();
 
 			Context::get().executeCommandList();

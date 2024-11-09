@@ -111,10 +111,32 @@ void Window::present()
 	_swapChain->Present(1, 0);
 }
 
+void Window::resize()
+{
+	if (_swapChain)
+	{
+		RECT rc;
+		GetClientRect(_windowHandle, &rc);
+		_width = rc.right - rc.left;
+		_height = rc.bottom - rc.top;
+		_swapChain->ResizeBuffers(GetFrameCount(), _width, _height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		
+	}
+	_resize = false;
+
+}
+
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)
-    {
+	switch (message)
+	{
+
+	case WM_SIZE:
+		if (lParam && ( LOWORD(lParam) != get()._width || HIWORD(lParam) != get()._height )) {
+			get()._resize = true;
+		}
+		break;
+
 	case WM_CLOSE:
         get()._closed = true;
 		PostQuitMessage(0);
