@@ -126,11 +126,51 @@ void Window::resize()
 
 }
 
+void Window::SetFullscreen(bool enabled)
+{
+	if (enabled)
+	{
+
+		SetWindowLongW(_windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+		SetWindowLongW(_windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW);
+		
+
+		// _swapChain->SetFullscreenState(true, nullptr);
+	}
+	else
+	{
+
+		SetWindowLongW(_windowHandle, GWL_STYLE, WINDOW_STYLES);
+		SetWindowLongW(_windowHandle, GWL_EXSTYLE, WINDOW_EX_STYLES);
+
+		// _swapChain->SetFullscreenState(false, nullptr);
+	}
+	_isFullscreen = enabled;
+
+	IDXGIOutput6* output = Context::get().getOutput();
+	DXGI_OUTPUT_DESC1 desc;
+	output->GetDesc1(&desc);
+	SetWindowPos(
+		_windowHandle,
+		nullptr,
+		desc.DesktopCoordinates.left,
+		desc.DesktopCoordinates.top,
+		desc.DesktopCoordinates.right - desc.DesktopCoordinates.left,
+		desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top,
+		SWP_NOZORDER);
+
+}
+
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-
+	case WM_KEYDOWN:
+		if (wParam == VK_F11)
+		{
+			get().SetFullscreen(!get()._isFullscreen);
+		}
+		break;
 	case WM_SIZE:
 		if (lParam && ( LOWORD(lParam) != get()._width || HIWORD(lParam) != get()._height )) {
 			get()._resize = true;

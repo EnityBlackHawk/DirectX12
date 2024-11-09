@@ -18,8 +18,12 @@ bool Context::init()
 	tempAdapter->Release();
 	tempAdapter.Detach();
 
-	DXGI_ADAPTER_DESC3 ad;
-	_adapter->GetDesc3(&ad);
+	ComPtr<IDXGIOutput> tmp_output;
+	result = _adapter->EnumOutputs(0, tmp_output.GetAddressOf());
+	assert_if_SUCCEEDED(result, "Cant create DXGIOutput");
+
+	result = tmp_output->QueryInterface(IID_PPV_ARGS(&_output));
+	assert_if_SUCCEEDED(result, "Cant convert to IDXGIOutput6");
 
 	result = D3D12CreateDevice(_adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device));
 	assert_if_SUCCEEDED(result, "Cant create Device");

@@ -29,6 +29,7 @@ public:
 
 	ComPtr<IDXGIFactory7> getDxgiFactory() const { return _dxgiFactory; }
 	ComPtr<ID3D12CommandQueue> getCommandQueue() const { return _commandQueue; }
+	IDXGIOutput6* getOutput() const { return _output.Get(); }
 
 private:
 	Context() = default;
@@ -36,6 +37,7 @@ private:
 	ComPtr<IDXGIFactory7> _dxgiFactory;
 	ComPtr<IDXGIAdapter4> _adapter;
 	ComPtr<ID3D12Device10> _device;
+	ComPtr<IDXGIOutput6> _output;
 	ComPtr<ID3D12CommandQueue> _commandQueue;
 	ComPtr<ID3D12Fence1> _fence;
 	ComPtr<ID3D12GraphicsCommandList7> _commandList;
