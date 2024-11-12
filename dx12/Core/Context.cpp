@@ -10,7 +10,8 @@ bool Context::init()
 	assert_if_SUCCEEDED(result, "Cant create DXGIFactory");
 
 	ComPtr<IDXGIAdapter1> tempAdapter;
-	result = _dxgiFactory->EnumAdapters1(1, tempAdapter.GetAddressOf());
+	//TODO: Get the adapter with the most VRAM
+	result = _dxgiFactory->EnumAdapters1(0, tempAdapter.GetAddressOf());
 	assert_if_SUCCEEDED(result, "Cant create DXGIAdapter");
 
 	result = tempAdapter->QueryInterface(IID_PPV_ARGS(&_adapter));

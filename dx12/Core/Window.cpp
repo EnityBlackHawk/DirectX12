@@ -4,27 +4,27 @@
 
 bool Window::init()
 {
-    // Window class
+	// Window class
 
-    WNDCLASSEXW wc = {};
-    wc.cbSize = sizeof(WNDCLASSEXW);
-    wc.lpfnWndProc = &Window::WndProc;
-    wc.cbClsExtra = 0;
-    wc.cbWndExtra = 0;
-    wc.hInstance = GetModuleHandle(nullptr);
-    wc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    wc.hbrBackground = nullptr;
-    wc.lpszMenuName = nullptr;
-    wc.lpszClassName = L"DefWindow";
+	WNDCLASSEXW wc = {};
+	wc.cbSize = sizeof(WNDCLASSEXW);
+	wc.lpfnWndProc = &Window::WndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = GetModuleHandle(nullptr);
+	wc.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+	wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+	wc.hbrBackground = nullptr;
+	wc.lpszMenuName = nullptr;
+	wc.lpszClassName = L"DefWindow";
 	wc.style = CS_OWNDC;
 
 
 	_windowClass = RegisterClassExW(&wc);
-    
-    assert(_windowClass && "Error on register the window class");
 
-    _windowHandle = CreateWindowExW(
+	assert(_windowClass && "Error on register the window class");
+
+	_windowHandle = CreateWindowExW(
 		WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW,
 		(LPCWSTR)_windowClass,
 		L"DX12",
@@ -39,7 +39,7 @@ bool Window::init()
 		nullptr
 	);
 
-    assert(_windowHandle && "Error on create the window");
+	assert(_windowHandle && "Error on create the window");
 
 	DXGI_SWAP_CHAIN_DESC1 scd = {};
 	scd.Width = 800;
@@ -70,11 +70,13 @@ bool Window::init()
 		nullptr,
 		swapChain.GetAddressOf()
 	);
-	
+
 	assert_if_SUCCEEDED(result, "Error on create the swap chain");
 
 	result = swapChain->QueryInterface(IID_PPV_ARGS(&_swapChain));
 	assert_if_SUCCEEDED(result, "Error on convert to IDXGISwapChain4");
+
+	getBuffers();
 
     return true;
 }
@@ -82,6 +84,9 @@ bool Window::init()
 void Window::shutdown()
 {
 
+	releaseBuffers();
+
+	// TODO: Exit fullscreen before release 
 	_swapChain->Release();
 	_swapChain.Detach();
 
@@ -119,37 +124,46 @@ void Window::resize()
 		GetClientRect(_windowHandle, &rc);
 		_width = rc.right - rc.left;
 		_height = rc.bottom - rc.top;
-		_swapChain->ResizeBuffers(GetFrameCount(), _width, _height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+
+		releaseBuffers();
+
+		HRESULT result = _swapChain->ResizeBuffers(GetFrameCount(), _width, _height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		assert_if_SUCCEEDED(result, "Error on resize the buffers");
 		
+		getBuffers();
 	}
 	_resize = false;
-
 }
 
 void Window::SetFullscreen(bool enabled)
 {
+
 	if (enabled)
 	{
 
+		// Borderless fullscreen:
 		SetWindowLongW(_windowHandle, GWL_STYLE, WS_POPUP | WS_VISIBLE);
 		SetWindowLongW(_windowHandle, GWL_EXSTYLE, WS_EX_APPWINDOW);
-		
 
-		// _swapChain->SetFullscreenState(true, nullptr);
+		// To use dedicated fullscreen (First we need to resize the swapchain to the current monitor size to fit the monitor):
+		// _swapChain->SetFullscreenState(true, Context::get().getOutput());
 	}
 	else
 	{
-
+		// Borderless fullscreen:
 		SetWindowLongW(_windowHandle, GWL_STYLE, WINDOW_STYLES);
 		SetWindowLongW(_windowHandle, GWL_EXSTYLE, WINDOW_EX_STYLES);
-
-		// _swapChain->SetFullscreenState(false, nullptr);
+		
+		// To use dedicated fullscreen (First we need to resize the swapchain to the current monitor size to fit the monitor):
+		// _swapChain->SetFullscreenState(false, Context::get().getOutput());
 	}
 	_isFullscreen = enabled;
 
-	IDXGIOutput6* output = Context::get().getOutput();
-	DXGI_OUTPUT_DESC1 desc;
-	output->GetDesc1(&desc);
+
+	IDXGIOutput* output;
+	_swapChain->GetContainingOutput(&output);
+	DXGI_OUTPUT_DESC desc;
+	output->GetDesc(&desc);
 	SetWindowPos(
 		_windowHandle,
 		nullptr,
@@ -159,6 +173,52 @@ void Window::SetFullscreen(bool enabled)
 		desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top,
 		SWP_NOZORDER);
 
+
+}
+
+void Window::beginFrame(ID3D12GraphicsCommandList7* commandList)
+{
+	_currentBufferIndex = _swapChain->GetCurrentBackBufferIndex();
+
+	D3D12_RESOURCE_BARRIER b;
+	b.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	b.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	b.Transition.pResource = _buffers[_currentBufferIndex].Get();
+	b.Transition.Subresource = 0;
+	b.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	b.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	commandList->ResourceBarrier(1, &b);
+}
+
+void Window::endFrame(ID3D12GraphicsCommandList7* commandList)
+{
+	D3D12_RESOURCE_BARRIER b;
+	b.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	b.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	b.Transition.pResource = _buffers[_currentBufferIndex].Get();
+	b.Transition.Subresource = 0;
+	b.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	b.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	commandList->ResourceBarrier(1, &b);
+}
+
+void Window::getBuffers()
+{
+	for (int i = 0; i < GetFrameCount(); i++)
+	{
+		_swapChain->GetBuffer(i, IID_PPV_ARGS(_buffers[i].GetAddressOf()));
+	}
+}
+
+void Window::releaseBuffers()
+{
+	for (int i = 0; i < GetFrameCount(); i++)
+	{
+		_buffers[i]->Release();
+		_buffers[i].Detach();
+	}
 }
 
 LRESULT Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

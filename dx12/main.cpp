@@ -12,14 +12,18 @@ int main() {
 		OutputDebugString(L"Device created");
 
 		while (!Window::get().isClosed()) {
+			// Process messages
 			Window::get().update();
 			if (Window::get().isResized())
 			{
 				Context::get().flush(Window::GetFrameCount());
 				Window::get().resize();
 			}
+			// Begin draw
 			auto* cmdList = Context::get().prepareCommandList();
+			Window::get().beginFrame(cmdList);
 
+			Window::get().endFrame(cmdList);
 			Context::get().executeCommandList();
 			Window::get().present();
 		}
