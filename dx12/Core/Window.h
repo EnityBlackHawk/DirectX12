@@ -40,6 +40,8 @@ private:
 
 	ComPtr<IDXGISwapChain4> _swapChain;
 	ComPtr<ID3D12Resource2> _buffers[frameCount];
+	ComPtr<ID3D12DescriptorHeap> _rtvHeap;
+	D3D12_CPU_DESCRIPTOR_HANDLE _rtvHandles[frameCount];
 	int _currentBufferIndex = 0;
 
 	bool _closed = false;

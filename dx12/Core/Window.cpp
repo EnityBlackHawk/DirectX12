@@ -75,6 +75,23 @@ bool Window::init()
 
 	result = swapChain->QueryInterface(IID_PPV_ARGS(&_swapChain));
 	assert_if_SUCCEEDED(result, "Error on convert to IDXGISwapChain4");
+	
+	D3D12_DESCRIPTOR_HEAP_DESC hp;
+	hp.NumDescriptors = GetFrameCount();
+	hp.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	hp.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	hp.NodeMask = 0;
+
+	result = Context::get().getDevice()->CreateDescriptorHeap(&hp, IID_PPV_ARGS(_rtvHeap.GetAddressOf()));
+	assert_if_SUCCEEDED(result, "Error on create the descriptor heap");
+
+	auto firstHandle = _rtvHeap->GetCPUDescriptorHandleForHeapStart();
+	UINT handleIncrement = Context::get().getDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	for (int i = 0; i < GetFrameCount(); i++)
+	{
+		_rtvHandles[i] = firstHandle;
+		_rtvHandles[i].ptr += handleIncrement * i;
+	}
 
 	getBuffers();
 
@@ -85,6 +102,9 @@ void Window::shutdown()
 {
 
 	releaseBuffers();
+
+	_rtvHeap->Release();
+	_rtvHeap.Detach();
 
 	// TODO: Exit fullscreen before release 
 	_swapChain->Release();
@@ -189,6 +209,9 @@ void Window::beginFrame(ID3D12GraphicsCommandList7* commandList)
 	b.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
 	commandList->ResourceBarrier(1, &b);
+	float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	commandList->ClearRenderTargetView(_rtvHandles[_currentBufferIndex], clearColor, 0, nullptr);
+	commandList->OMSetRenderTargets(1, &_rtvHandles[_currentBufferIndex], false, nullptr);
 }
 
 void Window::endFrame(ID3D12GraphicsCommandList7* commandList)
@@ -209,7 +232,17 @@ void Window::getBuffers()
 	for (int i = 0; i < GetFrameCount(); i++)
 	{
 		_swapChain->GetBuffer(i, IID_PPV_ARGS(_buffers[i].GetAddressOf()));
+
+		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+		rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+		rtvDesc.Texture2D.MipSlice = 0;
+		rtvDesc.Texture2D.PlaneSlice = 0;
+
+		Context::get().getDevice()->CreateRenderTargetView(_buffers[i].Get(), &rtvDesc, _rtvHandles[i]);
 	}
+
+	
 }
 
 void Window::releaseBuffers()

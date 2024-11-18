@@ -27,9 +27,10 @@ public:
 	ID3D12GraphicsCommandList7* prepareCommandList();
 	void executeCommandList();
 
-	ComPtr<IDXGIFactory7> getDxgiFactory() const { return _dxgiFactory; }
-	ComPtr<ID3D12CommandQueue> getCommandQueue() const { return _commandQueue; }
-	IDXGIOutput6* getOutput() const { return _output.Get(); }
+	inline ComPtr<IDXGIFactory7> getDxgiFactory() const { return _dxgiFactory; }
+	inline ComPtr<ID3D12CommandQueue> getCommandQueue() const { return _commandQueue; }
+	inline IDXGIOutput6* getOutput() const { return _output.Get(); }
+	inline ID3D12Device10* getDevice() const { return _device.Get(); }
 
 private:
 	Context() = default;
